@@ -1,14 +1,18 @@
-import torch
-from torch.optim import Adam, lr_scheduler
-from torch.nn import CrossEntropyLoss
-from torch.utils.data import DataLoader
-import torch.nn.functional as F
-from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.utils.class_weight import compute_class_weight
 import pickle
+
+import numpy as np
+import torch
+from sklearn.utils.class_weight import compute_class_weight
+from torch.nn import CrossEntropyLoss
+from torch.optim import Adam, lr_scheduler
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from LSTMs import BiLSTMTransducer, BiLSTMTransducerSubwords, LSTMCharLevel
+from config import DATASETS_3_A_DATA, DATASETS_3_B_DATA, DATASETS_3_C_DATA_WORDS, DATASETS_3_C_DATA_SUBWORDS, \
+    DATASETS_3_D_DATA_WORDS, DATASETS_3_D_DATA_CHARS, MODEL_3_A
+from dataset_wrapers import TokenTaggingDataset, SubWords, CharLevel
 
 
 class Runner_A:
@@ -93,8 +97,7 @@ class Runner_A:
 
                 correct_predictions = outputs.argmax(dim=-1).view(-1)[valid_mask] == labels.view(-1)[valid_mask]
                 total_correct += correct_predictions.sum().item()
-                total_non_pad_tokens += torch.sum((labels != label_pad_idx) & (labels != label_o_idx),
-                                                  dim=1).sum().item()
+                total_non_pad_tokens += torch.sum((labels != label_pad_idx) & (labels != label_o_idx), dim=1).sum().item()
 
                 samples_since_last_eval += len(inputs)
                 if samples_since_last_eval >= 500:
@@ -141,24 +144,31 @@ class Runner_A:
         torch.save(self.model, save_path) if save_path else None
         return dev_accuracy_history
 
-    def predict(self, path, filename):
+    def predict(self, save_path):
         test_loader = self.create_dataLoader(self.test_dataset, self.batch_size)
         self.model.eval()
         predictions = []
+        label_pad_idx = self.dataset.label_to_index('<PAD>')
 
         with torch.no_grad():
             for inputs in tqdm(test_loader, desc="Predicting", unit="batch"):
-                inputs = inputs.to(self.device)
+                inputs, dummy_labels = inputs  # assuming that your DataLoader returns a tuple (inputs, _)
                 outputs = self.model(inputs)
-                _, predicted = torch.max(outputs, 1)
-                predictions.extend(predicted.cpu().numpy())
+                predicted = outputs.argmax(dim=-1)
+                for i in range(len(predicted)):
+                    sentence_predictions = predicted[i][dummy_labels[i] != label_pad_idx]
+                    predictions.append(sentence_predictions.cpu().numpy().tolist())
 
-        full_path = os.path.join(path, filename)
-        with open(full_path, 'w') as file:
-            for prediction in predictions:
-                file.write(str(prediction) + '\n')
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-        print(f'Predictions written to {full_path}')
+        with open(save_path, 'w') as file:
+            for sentence in predictions:
+                for label_index in sentence:
+                    file.write(self.dataset.i2l[label_index] + '\n')
+                file.write('\n')  # separate sentences
+
+        print(f'Predictions written to {save_path}')
 
     def load_test(self, test_dataset_path, model_path, dataset_path=DATASETS_3_A_DATA):
         """
@@ -179,18 +189,6 @@ class Runner_A:
         dev_acc = self.train(num_epoch, save_path)
         print("Training complete. (Task A)")
         return dev_acc
-
-
-import torch
-from torch.optim import Adam, lr_scheduler
-from torch.nn import CrossEntropyLoss
-from torch.utils.data import DataLoader
-import torch.nn.functional as F
-from tqdm import tqdm
-import os
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.utils.class_weight import compute_class_weight
 
 
 class Runner_B:
@@ -324,24 +322,31 @@ class Runner_B:
         torch.save(self.model, save_path) if save_path else None
         return dev_accuracy_history
 
-    def predict(self, path, filename):
+    def predict(self, save_path):
         test_loader = self.create_dataLoader(self.test_dataset, self.batch_size)
         self.model.eval()
         predictions = []
+        label_pad_idx = self.dataset.label_to_index('<PAD>')
 
         with torch.no_grad():
             for inputs in tqdm(test_loader, desc="Predicting", unit="batch"):
-                inputs = inputs.to(self.device)
+                inputs, dummy_labels = inputs  # assuming that your DataLoader returns a tuple (inputs, _)
                 outputs = self.model(inputs)
-                _, predicted = torch.max(outputs, 1)
-                predictions.extend(predicted.cpu().numpy())
+                predicted = outputs.argmax(dim=-1)
+                for i in range(len(predicted)):
+                    sentence_predictions = predicted[i][dummy_labels[i] != label_pad_idx]
+                    predictions.append(sentence_predictions.cpu().numpy().tolist())
 
-        full_path = os.path.join(path, filename)
-        with open(full_path, 'w') as file:
-            for prediction in predictions:
-                file.write(str(prediction) + '\n')
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-        print(f'Predictions written to {full_path}')
+        with open(save_path, 'w') as file:
+            for sentence in predictions:
+                for label_index in sentence:
+                    file.write(self.dataset.i2l[label_index] + '\n')
+                file.write('\n')  # separate sentences
+
+        print(f'Predictions written to {save_path}')
 
     def load_test(self, test_dataset_path, model_path, dataset_path=DATASETS_3_B_DATA):
         """
@@ -362,18 +367,6 @@ class Runner_B:
         dev_acc = self.train(num_epoch, save_path)
         print("Training complete. (Task B)")
         return dev_acc
-
-
-import torch
-from torch.optim import Adam, lr_scheduler
-from torch.nn import CrossEntropyLoss
-from torch.utils.data import DataLoader
-import torch.nn.functional as F
-from tqdm import tqdm
-import os
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.utils.class_weight import compute_class_weight
 
 
 class Runner_C:
@@ -550,28 +543,35 @@ class Runner_C:
         torch.save(self.model, save_path) if save_path else None
         return dev_accuracy_history
 
-    def predict(self, path, filename):
+    def predict(self, save_path):
         char_test_loader = self.create_dataLoader(self.char_test_dataset, self.batch_size)
         word_test_loader = self.create_dataLoader(self.word_test_dataset, self.batch_size)
 
         self.model.eval()
         predictions = []
+        label_pad_idx = self.word_dataset.label_to_index('<PAD>')
 
         with torch.no_grad():
-            for (char_dev_batch, word_dev_batch) in zip(char_dev_loader, word_dev_loader):
+            for (char_dev_batch, word_dev_batch) in zip(char_test_loader, word_test_loader):
                 char_dev_inputs, _ = char_dev_batch
-                word_dev_inputs, dev_labels = word_dev_batch
-                dev_outputs = self.model(word_dev_inputs, char_dev_inputs)
-                non_pad_mask = dev_labels.view(-1) != label_pad_idx
-                _, predicted = torch.max(outputs, 1)
-                predictions.extend(predicted.cpu().numpy())
+                word_dev_inputs, dummy_labels = word_dev_batch
+                outputs = self.model(word_dev_inputs, char_dev_inputs)
+                predicted = outputs.argmax(dim=-1)
+                for i in range(len(predicted)):
+                    sentence_predictions = predicted[i][dummy_labels[i] != label_pad_idx]
+                    predictions.append(sentence_predictions.cpu().numpy().tolist())
 
-        full_path = os.path.join(path, filename)
-        with open(full_path, 'w') as file:
-            for prediction in predictions:
-                file.write(str(prediction) + '\n')
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-        print(f'Predictions written to {full_path}')
+        with open(save_path, 'w') as file:
+            for sentence in predictions:
+                for label_index in sentence:
+                    file.write(self.word_dataset.i2l[label_index] + '\n')
+                file.write('\n')  # separate sentences
+
+        print(f'Predictions written to {save_path}')
+
 
     def load_test(self, test_dataset_path, model_path, dataset_path_word=DATASETS_3_C_DATA_WORDS,
                   dataset_path_subword=DATASETS_3_C_DATA_SUBWORDS):
@@ -583,9 +583,11 @@ class Runner_C:
             dataset_path_subword = DATASETS_3_D_DATA_CHARS
 
         # Load the dataset from pickle file
-        with open(dataset_path, 'rb') as dataset_file:
+        with open(dataset_path_word, 'rb') as dataset_file:
             self.word_dataset = pickle.load(dataset_path_word)
-            self.char_dataset = pickle.load(dataset_path_word)
+
+        with open(dataset_path_subword, 'rb') as dataset_file:
+            self.char_dataset = pickle.load(dataset_path_subword)
 
         # Create the test dataset
         self.word_test_dataset = self.word_dataset.create_pytorch_dataset(test_dataset_path)
@@ -600,6 +602,7 @@ class Runner_C:
         dev_acc = self.train(num_epoch, save_path)
         print(f"Training complete. Task ({task})")
         return dev_acc
+
 
 class EarlyStopping:
     def __init__(self, patience=3, verbose=False, checkpoint_path=MODEL_3_A, name="POS"):

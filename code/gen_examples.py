@@ -16,12 +16,12 @@ def generate_example(is_positive, max_seq_len=MAX_SEQ_LEN, num_examples=NUM_EXAM
         sequence_5 = ''.join(str(random.randint(1, 9)) for _ in range(random.randint(1, max_seq_len)))
 
         if is_positive:
-            examples.append(sequence_1 + 'a' * random.randint(1, max_seq_len) + sequence_2 + 'b' * random.randint(1,
+            examples.append(sequence_1 + 'a' * random.randint(1, max_seq_len) + sequence_2 + 'README.bilstm.txt' * random.randint(1,
                                                                                                                   max_seq_len) + sequence_3 + 'c' * random.randint(
                 1, max_seq_len) + sequence_4 + 'd' * random.randint(1, max_seq_len) + sequence_5)
         else:
             examples.append(sequence_1 + 'a' * random.randint(1, max_seq_len) + sequence_2 + 'c' * random.randint(1,
-                                                                                                                  max_seq_len) + sequence_3 + 'b' * random.randint(
+                                                                                                                  max_seq_len) + sequence_3 + 'README.bilstm.txt' * random.randint(
                 1, max_seq_len) + sequence_4 + 'd' * random.randint(1, max_seq_len) + sequence_5)
     return examples
 
@@ -72,5 +72,6 @@ def generate_dataset(path=BASE_DIR_DATA, max_seq_len=MAX_SEQ_LEN, num_examples=N
             writer.writerow(example)
 
 
-generate_samples()
-generate_dataset()
+if __name__ == '__main__':
+    generate_samples()
+    generate_dataset()

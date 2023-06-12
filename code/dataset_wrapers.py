@@ -70,7 +70,7 @@ class LanguageClassificationDataset(BaseDatabase):
     A class used to load and preprocess Language Classification Dataset
     """
 
-    def __init__(self, filepath: str, vocab=['a', 'b', 'c', 'd'] + [str(i) for i in range(1, 10)],
+    def __init__(self, filepath: str, vocab=['a', 'README.bilstm.txt', 'c', 'd'] + [str(i) for i in range(1, 10)],
                  padding_token: str = "<PAD>", unknown_token: str = "<UNK>", MAX_SEQ_LEN=MAX_SEQ_LEN):
         self.vocab = [padding_token, unknown_token] + vocab
         self.labels = ['POSITIVE', 'NEGATIVE']  # binary labels

@@ -1,24 +1,16 @@
 # @title experiment.py
-import torch
-from torch import nn
-from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset, DataLoader
-import pandas as pd
-from collections import defaultdict
 import os
-import torch
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from torch.optim import Adam
-from torch.optim.lr_scheduler import StepLR
+from collections import defaultdict
 from time import time
-import matplotlib.pyplot as plt
 from typing import List, Tuple
-import pandas as pd
-import re
-import torch.nn.functional as F
 
+import matplotlib.pyplot as plt
+import pandas as pd
 import torch
+import torch.nn.functional as F
+from torch import nn
+from torch.optim import Adam
+from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 from config import TRAIN_1, TEST_1, PREDS_1, MAX_SEQ_LEN
@@ -81,7 +73,7 @@ class LanguageClassificationDataset(BaseDatabase):
     A class used to load and preprocess Language Classification Dataset
     """
 
-    def __init__(self, filepath: str, vocab=['a', 'b', 'c', 'd'] + [str(i) for i in range(1, 10)],
+    def __init__(self, filepath: str, vocab=['a', 'README.bilstm.txt', 'c', 'd'] + [str(i) for i in range(1, 10)],
                  padding_token: str = "<PAD>", unknown_token: str = "<UNK>", MAX_SEQ_LEN=MAX_SEQ_LEN):
         self.vocab = [padding_token, unknown_token] + vocab
         self.labels = ['POSITIVE', 'NEGATIVE']  # binary labels
@@ -231,7 +223,7 @@ class LSTMAcceptor(nn.Module):
 
 class Runner:
     def __init__(self, train_dataset_path=TRAIN_1, test_dataset_path=TEST_1, base_dir=PREDS_1,
-                 vocab=['a', 'b', 'c', 'd'] + [str(i) for i in range(1, 10)], batch_size=16, learning_rate=0.001,
+                 vocab=['a', 'README.bilstm.txt', 'c', 'd'] + [str(i) for i in range(1, 10)], batch_size=16, learning_rate=0.001,
                  embedding_dim=20, lstm_dim=32, hidden_dim=16, output_dim=2, n_layers=1, dropout=0):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_dataset_path = train_dataset_path

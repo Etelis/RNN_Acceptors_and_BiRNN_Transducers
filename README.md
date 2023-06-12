@@ -8,8 +8,6 @@ Installation
 
 To install the necessary packages for this project, please run:
 
-bashCopy code
-
 `!pip install pandas matplotlib tensorboard numpy sympy scikit-learn ordered-set -q`
 
 Contents
@@ -43,15 +41,12 @@ For this part, try to challenge the model and make it fail. The file `part2.py` 
 
 To train a BiLSTM model, use the following command:
 
-bashCopy code
-
 `bilstmTrain.py repr trainFile modelFile`
 
 Here, `repr` is one of the options: `a`, `b`, `c`, `d`; `trainFile` is the input file for training (expected to have a space delimiter); and `modelFile` is the directory to save the trained model. This process also creates dataset wrappers in the directory defined in `config.py`.
 
 To predict using the trained BiLSTM model, use the following command:
 
-bashCopy code
 
 `bilstmPredict.py repr modelFile inputFile`
 
@@ -60,5 +55,3 @@ Here, `modelFile` is the path to the trained model, and `inputFile` is the file 
 ### Notebooks
 
 For a more interactive experience, you can use the provided notebooks in the `notebooks` directory. These notebooks guide you through each step of the project, using the models and functions described above.
-
-Enjoy the project!

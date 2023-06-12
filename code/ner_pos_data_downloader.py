@@ -66,7 +66,7 @@ def download_wordembedding(url_embedding='https://u.cs.biu.ac.il/~89-687/ass2/wo
     return embedding_folder
 
 
-def download_data():
-    pos_data_path = download_POS_data()
-    ner_data_path = download_NER_data()
-    embedding_data_path = download_wordembedding()
+if __name__ == '__main__':
+    download_POS_data()
+    download_NER_data()
+    download_wordembedding()
